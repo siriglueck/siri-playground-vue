@@ -1,3 +1,11 @@
+# create a new Vue2 project
+## Vite = Vue3, we use vue create projectname
+```
+vue create my-vue2-app
+npm install bootstrap-vue bootstrap
+```
+
+
 # 01-install-vue2-bootstrapvue
 
 ## Project setup
