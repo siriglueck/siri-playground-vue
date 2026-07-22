@@ -1,0 +1,11 @@
+// ---------------------------------------------------------------------------
+// Custom Bootstrap theme.
+// Override Bootstrap's SCSS variables BEFORE importing Bootstrap so the whole
+// framework (buttons, badges, links, etc.) is recompiled with our colors.
+// ---------------------------------------------------------------------------
+
+// Brand primary: deep wine red instead of the default blue.
+$primary: #781e2a;
+
+// Pull in Bootstrap with our overrides applied.
+@import 'bootstrap/scss/bootstrap';
