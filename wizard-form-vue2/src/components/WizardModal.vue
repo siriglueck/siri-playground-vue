@@ -1,0 +1,148 @@
+<!--
+  WizardModal.vue — the wizard's BRAIN.
+
+  It OWNS two things (plan.md section 3):
+    • `form`        the draft the user is filling in  (draft state)
+    • `currentStep` which step is showing 1/2/3        (UI-only state)
+
+  It passes `form` DOWN to each step, and listens for the Back/Next/Submit
+  buttons to move between steps. Validation is enforced HERE (in `next()`), so a
+  step can't be advanced while required fields are empty.
+
+  Visibility is controlled by the PARENT (App.vue): App owns whether the modal is
+  open, passes it in as the `visible` prop, and we emit `update:visible` when
+  BootstrapVue tells us the modal opened/closed. That pairing is what makes
+  `:visible.sync` work in App.
+-->
+<template>
+  <b-modal
+    :visible="visible"
+    size="lg"
+    :title="modalTitle"
+    no-close-on-backdrop
+    scrollable
+    @change="onVisibleChange"
+    @show="resetForm"
+  >
+    <!-- Small progress hint at the top -->
+    <p class="text-muted small mb-4">Schritt {{ currentStep }} von 3</p>
+
+    <!-- Only ONE step is rendered at a time (v-if / v-else-if on currentStep).
+         Each step receives the SAME `form` object — that's the shared whiteboard.
+         Steps 2 & 3 are placeholders for now; we build them next. -->
+    <StepUnfalldaten
+      v-if="currentStep === 1"
+      :form="form"
+      :errors="step1Errors"
+      :validated="validated"
+    />
+    <div v-else-if="currentStep === 2" class="text-muted">
+      Schritt 2 (Beteiligte Daten) — bauen wir als Nächstes.
+    </div>
+    <div v-else-if="currentStep === 3" class="text-muted">
+      Schritt 3 (Vorschau) — bauen wir danach.
+    </div>
+
+    <!-- Custom footer: we replace BootstrapVue's default OK/Cancel with our own
+         wizard buttons so we control navigation. -->
+    <template #modal-footer>
+      <b-button variant="outline-secondary" @click="close">Abbrechen</b-button>
+      <div class="ml-auto">
+        <b-button v-if="currentStep > 1" class="mr-2" @click="back">Zurück</b-button>
+        <b-button v-if="currentStep < 3" variant="primary" @click="next">
+          Weiter
+        </b-button>
+        <b-button v-if="currentStep === 3" variant="success" @click="submit">
+          Absenden
+        </b-button>
+      </div>
+    </template>
+  </b-modal>
+</template>
+
+<script>
+import StepUnfalldaten from './steps/StepUnfalldaten.vue'
+import { createIncident } from './WizardModal.data.js'
+import { validateStep1 } from './steps/StepUnfalldaten.data.js'
+
+export default {
+  name: 'WizardModal',
+
+  components: { StepUnfalldaten },
+
+  props: {
+    // Whether the modal is open. Owned by App.vue, passed down.
+    visible: { type: Boolean, default: false },
+  },
+
+  data() {
+    return {
+      currentStep: 1, // 1, 2, or 3
+      validated: false, // have we tried to advance? gates showing red errors
+      form: createIncident(), // the draft (a fresh blank form)
+    }
+  },
+
+  computed: {
+    modalTitle() {
+      const titles = {
+        1: 'Unfall melden · Unfalldaten',
+        2: 'Unfall melden · Beteiligte Daten',
+        3: 'Unfall melden · Vorschau',
+      }
+      return titles[this.currentStep]
+    },
+
+    // Recomputes automatically whenever the form changes. We pass it down to
+    // step 1 so it can show which fields are invalid.
+    step1Errors() {
+      return validateStep1(this.form)
+    },
+  },
+
+  methods: {
+    // BootstrapVue emits `change` with the new visibility. We forward it up so
+    // App's `:visible.sync` stays in step with the real modal state (e.g. when
+    // the user presses Esc or the X).
+    onVisibleChange(nextVisible) {
+      this.$emit('update:visible', nextVisible)
+    },
+
+    close() {
+      this.$emit('update:visible', false)
+    },
+
+    // Fresh start every time the modal opens (@show).
+    resetForm() {
+      this.form = createIncident()
+      this.currentStep = 1
+      this.validated = false
+    },
+
+    // Advance — but validate the current step first.
+    next() {
+      if (this.currentStep === 1) {
+        const errors = validateStep1(this.form)
+        if (Object.keys(errors).length > 0) {
+          this.validated = true // unlock the red messages and stop here
+          return
+        }
+      }
+      // (step 2 validation will be added when we build step 2)
+      this.validated = false
+      this.currentStep += 1
+    },
+
+    back() {
+      this.validated = false
+      this.currentStep -= 1
+    },
+
+    submit() {
+      // We'll build the final JSON here once steps 2 & 3 exist.
+      // eslint-disable-next-line no-console
+      console.log('submit (coming soon)', this.form)
+    },
+  },
+}
+</script>
