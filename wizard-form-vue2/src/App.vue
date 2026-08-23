@@ -23,8 +23,16 @@
       <i class="bi bi-plus-lg"></i> Neuen Unfall melden
     </b-button>
 
-    <!-- The wizard. `.sync` keeps App's showModal and the modal in agreement. -->
-    <WizardModal :visible.sync="showModal" />
+    <!-- The wizard. `.sync` keeps App's showModal and the modal in agreement.
+         @submit receives the finished JSON payload (event UP from the wizard). -->
+    <WizardModal :visible.sync="showModal" @submit="onSubmit" />
+
+    <!-- Show the last delivered payload so we can SEE the JSON the backend gets.
+         In a real app this is where you'd POST it to the API instead. -->
+    <div v-if="lastPayload" class="mt-4">
+      <h2 class="h5">Gesendetes JSON (an Backend)</h2>
+      <pre class="bg-light border rounded p-3"><code>{{ prettyPayload }}</code></pre>
+    </div>
   </div>
 </template>
 
@@ -39,7 +47,26 @@ export default {
   data() {
     return {
       showModal: false, // is the wizard open?
+      lastPayload: null, // the most recent JSON the wizard delivered
     }
+  },
+
+  computed: {
+    // Pretty-print the payload for display (2-space indent).
+    prettyPayload() {
+      return JSON.stringify(this.lastPayload, null, 2)
+    },
+  },
+
+  methods: {
+    // The wizard finished: it handed us the final JSON. In a real app we'd
+    // POST it here (await api.post('/incidents', payload)). For now we store it
+    // so the template can display it.
+    onSubmit(payload) {
+      this.lastPayload = payload
+      // eslint-disable-next-line no-console
+      console.log('Payload an Backend:', payload)
+    },
   },
 }
 </script>

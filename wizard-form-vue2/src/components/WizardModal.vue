@@ -65,7 +65,7 @@
 import StepUnfalldaten from './steps/StepUnfalldaten.vue'
 import StepBeteiligte from './steps/StepBeteiligte.vue'
 import StepPreview from './steps/StepPreview.vue'
-import { createIncident } from './WizardModal.data.js'
+import { createIncident, buildPayload } from './WizardModal.data.js'
 import { validateStep1 } from './steps/StepUnfalldaten.data.js'
 import { validateStep2, participantHasError } from './steps/StepBeteiligte.data.js'
 
@@ -157,9 +157,11 @@ export default {
     },
 
     submit() {
-      // We'll build the final JSON here once steps 2 & 3 exist.
-      // eslint-disable-next-line no-console
-      console.log('submit (coming soon)', this.form)
+      // Translate the draft into the backend JSON, then send it UP to App.
+      // App owns "what happens with saved data" — the wizard just hands it off.
+      const payload = buildPayload(this.form)
+      this.$emit('submit', payload)
+      this.close() // hide the modal (App flips showModal to false via .sync)
     },
   },
 }

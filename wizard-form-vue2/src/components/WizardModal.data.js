@@ -27,3 +27,40 @@ export function combineDateTime(date, time) {
   if (!date || !time) return ''
   return `${date}T${time}:00`
 }
+
+// -----------------------------------------------------------------------------
+// buildPayload — turn the DRAFT (`form`, the shape the UI needs) into the exact
+// JSON the backend expects (the shape the API needs). These two shapes differ on
+// purpose, so this is where we translate:
+//   • date + time  ->  one combined `incidentDate` datetime
+//   • photos       ->  keep only `filename` (drop the browser-only preview `url`)
+//   • participants ->  copy through the clean nested structure
+// Building a payload explicitly (instead of sending `form` as-is) means the API
+// never receives UI-only junk, and the backend contract is documented right here.
+// -----------------------------------------------------------------------------
+export function buildPayload(form) {
+  return {
+    incidentType: form.incidentType,
+    incidentDate: combineDateTime(form.incidentDate, form.incidentTime),
+    incidentLocation: form.incidentLocation,
+
+    // Photos: strip the preview `url`, keep just the filename.
+    incidentPhoto: form.incidentPhoto.map((photo) => ({
+      filename: photo.filename,
+    })),
+
+    // Participants: rebuild each level so only the fields we mean to send go out.
+    incidentParticipant: form.incidentParticipant.map((p) => ({
+      firstName: p.firstName,
+      lastName: p.lastName,
+      injury: p.injury.map((inj) => ({
+        bodyPart: inj.bodyPart,
+        injuryType: inj.injuryType,
+      })),
+      firstAidUsages: p.firstAidUsages.map((u) => ({
+        firstAidMaterial: u.firstAidMaterial,
+        amount: u.amount,
+      })),
+    })),
+  }
+}
