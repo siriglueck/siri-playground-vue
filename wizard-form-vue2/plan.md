@@ -10,6 +10,42 @@ explain the *lines*.
 
 ---
 
+## 0. Quickstart & current status
+
+**Run the app** (from `wizard-form-vue2/`):
+
+```bash
+npm install       # first time only
+npm run serve     # dev server with hot-reload
+# open http://localhost:8080/
+```
+
+Stack: **Vue 2.6 + BootstrapVue 2.23 + Bootstrap 4** (vue-cli). Windows / PowerShell.
+Note: ESLint errors **block** the build — a red error in the terminal means the
+page won't update until it's fixed.
+
+**Current status (as of last session):**
+
+- ✅ All 7 build steps complete: 3-step wizard in a modal, validated step 1,
+  appendable participants with nested appendable injuries + first-aid, read-only
+  preview, and a final JSON payload.
+- ✅ Save-draft & resume feature complete (localStorage "DB", upsert by id,
+  working-copy editing). See **section 11**.
+- ✅ Everything committed and pushed to `main`; working tree clean.
+- ⏳ **Nothing in progress** — clean stopping point. The natural next tasks are
+  in **section 10** (wire the real backend, add more fields).
+
+**Related context (for expanding later):**
+
+- The code intentionally uses a **simplified field set**. The full field spec
+  (e.g. `witnessName`, `managerName`, `division`, `lostWorkday`, `isDead`,
+  `hasWorkStopped`, `firstAidStation`, `amount`, per-record `id`s) is broader.
+- A real **Symfony backend** already exists in the sibling project
+  `../3-steps-wizard-form/backend/` (Doctrine entities + an incident controller)
+  — a reference for the eventual API and DB schema.
+
+---
+
 ## 1. What we are building
 
 - **Page** with a single button: "Neuen Unfall melden" (Report new accident).
