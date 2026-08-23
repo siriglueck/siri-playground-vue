@@ -296,6 +296,7 @@ Convention recap: each feature colocates `Component.vue` (UI) with
 Repo: `siriglueck/siri-playground-vue` · branch `main`
 
 ```
+b2623c5  learn: add save-draft & resume feature (localStorage, upsert, working copy)
 63713ca  learn: assemble & emit final JSON payload (step 7)
 53efc1f  learn: build step 3 preview (read-only summary + photos)
 33dbdf1  learn: build step 2 (participants) with nested appendable rows
@@ -308,6 +309,7 @@ Repo: `siriglueck/siri-playground-vue` · branch `main`
 | `33dbdf1` | Step 5        | Participants + `ParticipantCard`, nested rows, live header, validation |
 | `53efc1f` | Step 6        | Read-only preview, value→label mapping, photo thumbnails          |
 | `63713ca` | Step 7        | `buildPayload()`, `submit` event up to `App`, JSON displayed      |
+| `b2623c5` | Feature       | Save draft & resume: localStorage DB, upsert by id, working-copy edit |
 
 ---
 
