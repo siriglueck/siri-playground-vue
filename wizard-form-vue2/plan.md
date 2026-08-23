@@ -205,28 +205,41 @@ Validation display in BootstrapVue is done with the **`:state`** prop:
 
 ---
 
-## 6. Build order (we do these together, one at a time)
+## 6. Build order  ✅ COMPLETE
 
-- [ ] **Step 0 — Scaffold.** Create the vue-cli project, install Vue 2.6 +
-      BootstrapVue 2.23 (same stack as your `yt-bootstrap-vue` examples), get a
-      blank page running with `npm run serve`.
-- [ ] **Step 1 — App + empty modal.** One button that opens/closes a `<b-modal>`.
-      Learn modal open/close and `v-model` on the modal.
-- [ ] **Step 2 — The data model (`models.js`).** Factory functions that create a
-      blank incident / participant / injury / first-aid row. One place that
-      defines our JSON shape.
-- [ ] **Step 3 — Wizard shell.** Put the step counter, the Back/Next/Submit
-      buttons, and the shared `form` inside `WizardModal`. Swap step views with
-      `v-if` on `currentStep`.
-- [ ] **Step 4 — StepUnfalldaten (step 1 view)** + "validate before Next".
-- [ ] **Step 5 — StepBeteiligte + ParticipantCard** with nested appendable
-      injuries and first-aid rows. (The big one.)
-- [ ] **Step 6 — StepPreview (step 3 view)** + image preview.
-- [ ] **Step 7 — Assemble & emit the final JSON** up to `App`, and log it /
-      show it so you can see the finished object.
+- [x] **Step 0 — Scaffold.** vue-cli project, Vue 2.6 + BootstrapVue 2.23 (same
+      stack as the `yt-bootstrap-vue` examples), blank page via `npm run serve`.
+- [x] **Step 1 — App + empty modal.** One button opens/closes a `<b-modal>`,
+      controlled from App with `:visible.sync`.
+- [x] **Step 2 — The data model.** Instead of one central `models.js`, we
+      COLOCATED each step's data logic in a sibling `.data.js` file (factories,
+      constants, validation). See section 8 for the final structure.
+- [x] **Step 3 — Wizard shell.** Step counter, Back/Next/Submit buttons, and the
+      shared `form` live in `WizardModal`. Step views swap with `v-if` on
+      `currentStep`.
+- [x] **Step 4 — StepUnfalldaten (step 1 view)** + "validate before Next".
+- [x] **Step 5 — StepBeteiligte + ParticipantCard** with nested appendable
+      injuries and first-aid rows, live participant name in the card header, and
+      nested validation.
+- [x] **Step 6 — StepPreview (step 3 view)** + photo thumbnails, value→label
+      mapping (`work_accident` → "Arbeitsunfall").
+- [x] **Step 7 — Assemble & emit the final JSON.** `buildPayload()` translates
+      the draft into the backend shape; the wizard emits `submit`; `App` receives
+      and displays it.
 
-Each step: I write the file(s) with heavy comments, then explain what's new and
-*why*. You read, ask, we move on.
+### What changed from the original plan (and why)
+
+- **`models.js` → per-step `.data.js` files.** We colocated each feature's logic
+  with its component (feature-folder convention). The overall form factory sits
+  in `WizardModal.data.js` because the wizard owns the form.
+- **ESLint override for step files.** Our shared-form design mutates a prop,
+  which the default `vue/no-mutating-props` rule forbids. We turned it off for
+  `src/components/steps/*.vue` only (see `package.json` > eslintConfig >
+  overrides). Everywhere else the "don't mutate props" rule still applies.
+- **Nested validation.** The step-2 error object mirrors the data shape
+  (`errors.injury[i]`, `errors.firstAidUsages[i]`). Because those arrays are
+  always present, "is this participant valid?" needed a real helper
+  (`participantHasError`) instead of counting keys.
 
 ---
 
@@ -242,4 +255,66 @@ Each step: I write the file(s) with heavy comments, then explain what's new and
   (e.g. `createParticipant()`), so we never hand-write the same shape twice.
 - **working copy** — when editing, we edit a *clone* so Cancel can throw it away
   without touching the saved data.
+
+---
+
+## 8. Final file structure (what we actually built)
+
 ```
+wizard-form-vue2/
+├─ package.json               deps + scripts + ESLint override for step files
+├─ babel.config.js
+├─ jsconfig.json
+├─ plan.md                    ← this file
+├─ public/
+│  └─ index.html              the single page; Vue mounts into <div id="app">
+└─ src/
+   ├─ main.js                 entry point: CSS + Vue.use(BootstrapVue) + mount App
+   ├─ App.vue                 the page: button, hosts modal, receives final JSON
+   └─ components/
+      ├─ WizardModal.vue      the BRAIN: owns form draft + currentStep + nav
+      ├─ WizardModal.data.js  createIncident(), combineDateTime(), buildPayload()
+      └─ steps/
+         ├─ StepUnfalldaten.vue       step 1 UI (type, date, time, location, photos)
+         ├─ StepUnfalldaten.data.js   INCIDENT_TYPES + validateStep1()
+         ├─ StepBeteiligte.vue        step 2 UI: owns the participant LIST
+         ├─ StepBeteiligte.data.js    create* factories + validateStep2() + participantHasError()
+         ├─ ParticipantCard.vue       ONE participant: its own injury[] & firstAidUsages[]
+         └─ StepPreview.vue           step 3 UI: read-only summary + photo thumbnails
+```
+
+Convention recap: each feature colocates `Component.vue` (UI) with
+`Component.data.js` (plain-data logic: factories, constants, validation). The
+`.vue` file touches Vue/`this`/DOM; the `.data.js` file never does.
+
+---
+
+## 9. Build history (GitHub)
+
+Repo: `siriglueck/siri-playground-vue` · branch `main`
+
+```
+63713ca  learn: assemble & emit final JSON payload (step 7)
+53efc1f  learn: build step 3 preview (read-only summary + photos)
+33dbdf1  learn: build step 2 (participants) with nested appendable rows
+3f4865e  learn: scaffold Vue2 + BootstrapVue wizard (modal + validated step 1)
+```
+
+| Commit    | Covers        | What landed                                                        |
+| --------- | ------------- | ----------------------------------------------------------------- |
+| `3f4865e` | Steps 0–4     | Scaffold, `:visible.sync` modal, wizard shell, validated step 1   |
+| `33dbdf1` | Step 5        | Participants + `ParticipantCard`, nested rows, live header, validation |
+| `53efc1f` | Step 6        | Read-only preview, value→label mapping, photo thumbnails          |
+| `63713ca` | Step 7        | `buildPayload()`, `submit` event up to `App`, JSON displayed      |
+
+---
+
+## 10. Where this goes next
+
+- **POST to the backend.** Replace the display in `App.onSubmit` with
+  `await api.post('/incidents', payload)`. Only that one method changes — the
+  whole prop/event flow stays the same.
+- **Edit an existing report.** Load a record into the modal by CLONING it first
+  (the "working copy" pattern), so Cancel leaves the original untouched.
+- **More fields.** The nesting is done; adding fields is just more inputs bound
+  into the same `form` and mapped in `buildPayload()`.
