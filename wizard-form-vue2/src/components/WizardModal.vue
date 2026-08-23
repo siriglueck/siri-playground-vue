@@ -36,9 +36,12 @@
       :errors="step1Errors"
       :validated="validated"
     />
-    <div v-else-if="currentStep === 2" class="text-muted">
-      Schritt 2 (Beteiligte Daten) — bauen wir als Nächstes.
-    </div>
+    <StepBeteiligte
+      v-else-if="currentStep === 2"
+      :form="form"
+      :errors="step2Errors"
+      :validated="validated"
+    />
     <div v-else-if="currentStep === 3" class="text-muted">
       Schritt 3 (Vorschau) — bauen wir danach.
     </div>
@@ -62,13 +65,15 @@
 
 <script>
 import StepUnfalldaten from './steps/StepUnfalldaten.vue'
+import StepBeteiligte from './steps/StepBeteiligte.vue'
 import { createIncident } from './WizardModal.data.js'
 import { validateStep1 } from './steps/StepUnfalldaten.data.js'
+import { validateStep2, participantHasError } from './steps/StepBeteiligte.data.js'
 
 export default {
   name: 'WizardModal',
 
-  components: { StepUnfalldaten },
+  components: { StepUnfalldaten, StepBeteiligte },
 
   props: {
     // Whether the modal is open. Owned by App.vue, passed down.
@@ -97,6 +102,11 @@ export default {
     // step 1 so it can show which fields are invalid.
     step1Errors() {
       return validateStep1(this.form)
+    },
+
+    // ARRAY of error objects, one per participant. Passed down to step 2.
+    step2Errors() {
+      return validateStep2(this.form)
     },
   },
 
@@ -128,7 +138,16 @@ export default {
           return
         }
       }
-      // (step 2 validation will be added when we build step 2)
+      if (this.currentStep === 2) {
+        // validateStep2 returns an array; the step is invalid if ANY
+        // participant has an error — including a nested injury/first-aid row.
+        const perParticipant = validateStep2(this.form)
+        const hasError = perParticipant.some(participantHasError)
+        if (hasError) {
+          this.validated = true
+          return
+        }
+      }
       this.validated = false
       this.currentStep += 1
     },
