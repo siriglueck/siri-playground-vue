@@ -42,9 +42,7 @@
       :errors="step2Errors"
       :validated="validated"
     />
-    <div v-else-if="currentStep === 3" class="text-muted">
-      Schritt 3 (Vorschau) — bauen wir danach.
-    </div>
+    <StepPreview v-else-if="currentStep === 3" :form="form" />
 
     <!-- Custom footer: we replace BootstrapVue's default OK/Cancel with our own
          wizard buttons so we control navigation. -->
@@ -66,6 +64,7 @@
 <script>
 import StepUnfalldaten from './steps/StepUnfalldaten.vue'
 import StepBeteiligte from './steps/StepBeteiligte.vue'
+import StepPreview from './steps/StepPreview.vue'
 import { createIncident } from './WizardModal.data.js'
 import { validateStep1 } from './steps/StepUnfalldaten.data.js'
 import { validateStep2, participantHasError } from './steps/StepBeteiligte.data.js'
@@ -73,7 +72,7 @@ import { validateStep2, participantHasError } from './steps/StepBeteiligte.data.
 export default {
   name: 'WizardModal',
 
-  components: { StepUnfalldaten, StepBeteiligte },
+  components: { StepUnfalldaten, StepBeteiligte, StepPreview },
 
   props: {
     // Whether the modal is open. Owned by App.vue, passed down.
