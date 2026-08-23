@@ -38,15 +38,22 @@
         <dd class="col-sm-9">
           <span v-if="!form.incidentPhoto.length" class="text-muted">Keine</span>
           <div v-else class="d-flex flex-wrap">
-            <img
-              v-for="(photo, i) in form.incidentPhoto"
-              :key="i"
-              :src="photo.url"
-              :alt="photo.filename"
-              :title="photo.filename"
-              class="border rounded mr-2 mb-2"
-              style="width: 80px; height: 80px; object-fit: cover"
-            />
+            <template v-for="(photo, i) in form.incidentPhoto">
+              <img
+                v-if="photo.url"
+                :key="i"
+                :src="photo.url"
+                :alt="photo.filename"
+                :title="photo.filename"
+                class="border rounded mr-2 mb-2"
+                style="width: 80px; height: 80px; object-fit: cover"
+              />
+              <span
+                v-else
+                :key="i"
+                class="badge badge-light border mr-2 mb-2 p-2"
+              >{{ photo.filename }}</span>
+            </template>
           </div>
         </dd>
       </dl>
@@ -93,8 +100,8 @@
 </template>
 
 <script>
-// We need the type OPTIONS to turn the stored value into a readable label.
-import { INCIDENT_TYPES } from './StepUnfalldaten.data.js'
+// Shared helper that turns the stored value into a readable label.
+import { incidentTypeText } from './StepUnfalldaten.data.js'
 
 export default {
   name: 'StepPreview',
@@ -107,8 +114,7 @@ export default {
   computed: {
     // Map the stored value (e.g. 'work_accident') to its label ('Arbeitsunfall…').
     incidentTypeText() {
-      const match = INCIDENT_TYPES.find((t) => t.value === this.form.incidentType)
-      return match ? match.text : ''
+      return incidentTypeText(this.form.incidentType)
     },
   },
 

@@ -82,11 +82,21 @@
           class="position-relative border rounded mr-2 mb-2"
           style="width: 90px; height: 90px; overflow: hidden"
         >
+          <!-- Live preview when we have the object URL (photo just selected).
+               A draft reloaded from storage has no url, so we show the filename. -->
           <img
+            v-if="photo.url"
             :src="photo.url"
             :alt="photo.filename"
             style="width: 100%; height: 100%; object-fit: cover"
           />
+          <div
+            v-else
+            class="d-flex align-items-center justify-content-center text-center small text-muted p-1"
+            style="width: 100%; height: 100%; word-break: break-all"
+          >
+            {{ photo.filename }}
+          </div>
           <b-button
             size="sm"
             variant="danger"

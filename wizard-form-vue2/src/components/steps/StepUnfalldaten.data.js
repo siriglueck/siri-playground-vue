@@ -15,6 +15,14 @@ export const INCIDENT_TYPES = [
   { value: 'near_miss', text: 'Beinaheunfall (near miss)' },
 ]
 
+// Map a stored type value (e.g. 'work_accident') to its readable label
+// ('Arbeitsunfall…'). Returns '' if not found. Reused by the preview and by the
+// saved-reports list on the page.
+export function incidentTypeText(value) {
+  const match = INCIDENT_TYPES.find((t) => t.value === value)
+  return match ? match.text : ''
+}
+
 // Validation for step 1. A pure function: takes the form, returns an `errors`
 // object. A field is "valid" when its key is ABSENT from the result.
 export function validateStep1(form) {

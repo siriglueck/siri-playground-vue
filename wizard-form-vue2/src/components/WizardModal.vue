@@ -48,6 +48,13 @@
          wizard buttons so we control navigation. -->
     <template #modal-footer>
       <b-button variant="outline-secondary" @click="close">Abbrechen</b-button>
+
+      <!-- Save draft: available on EVERY step, and deliberately skips validation
+           (a draft is allowed to be incomplete). -->
+      <b-button variant="outline-primary" @click="saveDraft">
+        <i class="bi bi-save"></i> Entwurf speichern
+      </b-button>
+
       <div class="ml-auto">
         <b-button v-if="currentStep > 1" class="mr-2" @click="back">Zurück</b-button>
         <b-button v-if="currentStep < 3" variant="primary" @click="next">
@@ -65,7 +72,7 @@
 import StepUnfalldaten from './steps/StepUnfalldaten.vue'
 import StepBeteiligte from './steps/StepBeteiligte.vue'
 import StepPreview from './steps/StepPreview.vue'
-import { createIncident, buildPayload } from './WizardModal.data.js'
+import { createIncident, recordToForm, buildPayload } from './WizardModal.data.js'
 import { validateStep1 } from './steps/StepUnfalldaten.data.js'
 import { validateStep2, participantHasError } from './steps/StepBeteiligte.data.js'
 
@@ -77,6 +84,9 @@ export default {
   props: {
     // Whether the modal is open. Owned by App.vue, passed down.
     visible: { type: Boolean, default: false },
+    // The record to EDIT, or null for a new report. When set, resetForm() loads
+    // a working COPY of it into `form` (see recordToForm).
+    incident: { type: Object, default: null },
   },
 
   data() {
@@ -121,9 +131,11 @@ export default {
       this.$emit('update:visible', false)
     },
 
-    // Fresh start every time the modal opens (@show).
+    // Runs every time the modal opens (@show). If we were given a record to
+    // edit, load a WORKING COPY of it; otherwise start blank. Either way `form`
+    // is a fresh object, so editing never mutates the stored record.
     resetForm() {
-      this.form = createIncident()
+      this.form = this.incident ? recordToForm(this.incident) : createIncident()
       this.currentStep = 1
       this.validated = false
     },
@@ -156,10 +168,17 @@ export default {
       this.currentStep -= 1
     },
 
+    // Save an incomplete draft: NO validation, status 'drafted'. App stores it.
+    saveDraft() {
+      const payload = buildPayload(this.form, 'drafted')
+      this.$emit('save-draft', payload)
+      this.close()
+    },
+
     submit() {
       // Translate the draft into the backend JSON, then send it UP to App.
       // App owns "what happens with saved data" — the wizard just hands it off.
-      const payload = buildPayload(this.form)
+      const payload = buildPayload(this.form, 'submitted')
       this.$emit('submit', payload)
       this.close() // hide the modal (App flips showModal to false via .sync)
     },

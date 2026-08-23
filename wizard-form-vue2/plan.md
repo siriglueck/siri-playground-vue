@@ -270,10 +270,12 @@ wizard-form-vue2/
 │  └─ index.html              the single page; Vue mounts into <div id="app">
 └─ src/
    ├─ main.js                 entry point: CSS + Vue.use(BootstrapVue) + mount App
-   ├─ App.vue                 the page: button, hosts modal, receives final JSON
+   ├─ App.vue                 the page: owns `reports` (pretend DB), list + localStorage,
+   │                          hosts modal, handles @save-draft / @submit
    └─ components/
-      ├─ WizardModal.vue      the BRAIN: owns form draft + currentStep + nav
-      ├─ WizardModal.data.js  createIncident(), combineDateTime(), buildPayload()
+      ├─ WizardModal.vue      the BRAIN: owns form draft + currentStep + nav + save-draft
+      ├─ WizardModal.data.js  createIncident(), combineDateTime()/splitDateTime(),
+      │                       buildPayload() (form→record), recordToForm() (record→form)
       └─ steps/
          ├─ StepUnfalldaten.vue       step 1 UI (type, date, time, location, photos)
          ├─ StepUnfalldaten.data.js   INCIDENT_TYPES + validateStep1()
@@ -311,10 +313,77 @@ Repo: `siriglueck/siri-playground-vue` · branch `main`
 
 ## 10. Where this goes next
 
-- **POST to the backend.** Replace the display in `App.onSubmit` with
-  `await api.post('/incidents', payload)`. Only that one method changes — the
-  whole prop/event flow stays the same.
-- **Edit an existing report.** Load a record into the modal by CLONING it first
-  (the "working copy" pattern), so Cancel leaves the original untouched.
+- **POST to the backend.** Replace `App.persist()` / `App.load()` (currently
+  localStorage) with `await api.post('/incidents', payload)` / `api.get(...)`.
+  Only those two methods change — the whole prop/event flow stays the same.
+- ~~**Edit an existing report.**~~ ✅ Done in section 11 (the "working copy" /
+  resume flow).
 - **More fields.** The nesting is done; adding fields is just more inputs bound
-  into the same `form` and mapped in `buildPayload()`.
+  into the same `form` and mapped in `buildPayload()` / `recordToForm()`.
+- **Draft validation on submit.** A resumed draft could still be incomplete;
+  `Absenden` already re-validates each step via `next()`, but you could also
+  block submit from step 3 if any earlier step is invalid.
+
+---
+
+## 11. Feature: Save draft & resume
+
+Lets the user save an **incomplete** form, leave, and come back to finish it.
+Drafts persist in `localStorage` (a stand-in for the backend DB).
+
+### Two shapes, two translators (the key idea)
+
+The **form** shape (good for editing) is NOT the **record** shape (good for
+storing). We translate in both directions instead of forcing one shape to do
+both jobs:
+
+```
+   form (edit shape)                        record (stored/backend shape)
+   • incidentDate 'YYYY-MM-DD'   buildPayload →  • incidentDate 'YYYY-MM-DDThh:mm:00'
+   • incidentTime 'hh:mm'        ───────────→    • reportStatus 'drafted'|'submitted'
+   • photo { filename, url }                     • photo { filename }   (url stripped)
+   • id                          recordToForm ←   • id
+                                 ───────────→
+```
+
+- `buildPayload(form, status)` — form → record (combine date+time, stamp status,
+  strip photo `url`, carry `id`).
+- `recordToForm(record)` — record → form (split datetime back, rebuild fields).
+  It also deep-copies everything, so it doubles as the **working copy**.
+
+### The working-copy pattern
+
+Reopening a draft loads a *fresh deep copy* into `form` (that's what
+`recordToForm` returns). So editing never touches the stored row — **Cancel is
+always safe**, and only Save writes back (via the emitted payload → `upsert`).
+
+### Upsert by id (no duplicates)
+
+`App.upsert(record)`: if `id == null` → assign a new id and push; else replace
+the matching row. One function does both create and update, so re-saving a draft
+(or later submitting it) updates the same `#id` instead of duplicating it.
+
+### Data flow
+
+```
+App (owns `reports` + localStorage)
+ │  :incident (record to edit, or null)     ▼ down
+ │  :visible.sync                            ▼ down
+WizardModal
+ │  @save-draft(payload)  (no validation, status 'drafted')   ▲ up
+ │  @submit(payload)      (validated,     status 'submitted') ▲ up
+ └─ resetForm(): form = incident ? recordToForm(incident) : createIncident()
+```
+
+- **Save draft** is on every step and **skips validation** — a draft may be
+  incomplete on purpose.
+- **The storage seam is tiny:** `App.persist()` / `App.load()` are the only two
+  methods that touch localStorage. Swap them for API calls and nothing else
+  changes.
+
+### Known limitation: photos
+
+A draft stores only the photo `filename` (a browser blob `url` can't survive a
+refresh). So a *reloaded* draft shows the filename as text, not a thumbnail. A
+real backend would return an image URL to show instead; the templates guard both
+cases (`v-if="photo.url"`).
